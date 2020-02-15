@@ -6,18 +6,15 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 
 namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 {
-
 	/// <summary>
 	/// <see cref="IViewProvider"/> that creates views for a given view model instance if both the views and the view models are located within the same assembly.
 	/// </summary>
@@ -28,12 +25,6 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 	public class DefaultViewProvider : IViewProvider
 	{
 		#region Delegates / Events
-
-		/// <summary>
-		/// Signature for functions used to further setup view models after their views have been resolved and bound.
-		/// </summary>
-		public delegate void SetupViewModelDelegate(object viewModel, FrameworkElement view);
-
 		#endregion
 
 		#region Constants
@@ -44,16 +35,8 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		/// <summary> Caches already resolved views via their view models as key. </summary>
 		private readonly ConcurrentDictionary<Type, Type> _viewModelToViewMappings;
 
-		//private readonly object _cacheLock;
-
-		///// <summary> Cache for already resolved views that are accessible via their view models. </summary>
-		//private readonly Dictionary<Type, Type> _viewCache;
-
-		///// <summary> A collection of auxiliary <see cref="IAuxiliaryViewProvider"/>s that are used in sequence to obtain a view for a view model prior to the handling of this class. </summary>
-		//private readonly ICollection<IAuxiliaryViewProvider> _auxiliaryViewProviders;
-
-		/// <summary> A collection of <see cref="SetupViewModelDelegate"/>s. </summary>
-		private readonly ICollection<SetupViewModelDelegate> _viewModelSetupCallbacks;
+		/// <summary> A collection of callbacks invoked once the view for a view model has been resolved. </summary>
+		private readonly ICollection<Action<object, FrameworkElement>> _viewModelSetupCallbacks;
 
 		#endregion
 
@@ -94,13 +77,14 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 				viewNamespaceSuffix,
 				viewModelNameSuffix,
 				viewNameSuffix,
-				null
-			) { }
+				new Action<object, FrameworkElement>[0]
+			)
+		{ }
 
 		/// <summary>
 		/// Constructor with default values for the multiple view/viewmodel name configurations.
 		/// </summary>
-		/// <param name="viewModelSetupCallbacks"> A collection of <see cref="SetupViewModelDelegate"/>s. </param>
+		/// <param name="viewModelSetupCallbacks"> A collection of callbacks invoked once the view for a view model has been resolved. </param>
 		/// <remarks>
 		/// <para> The default values are: </para>
 		/// <para> <see cref="ViewModelNamespaceSuffix"/>: ViewModels </para>
@@ -108,7 +92,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		/// <para> <see cref="ViewModelNameSuffix"/>: Model </para>
 		/// <para> <see cref="ViewNameSuffix"/>: [EMPTY] </para>
 		/// </remarks>
-		public DefaultViewProvider(params SetupViewModelDelegate[] viewModelSetupCallbacks)
+		public DefaultViewProvider(params Action<object, FrameworkElement>[] viewModelSetupCallbacks)
 			: this
 			(
 				viewModelNamespaceSuffix: "ViewModels",
@@ -120,33 +104,78 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		{ }
 
 		/// <summary>
+		/// Constructor with default values for the multiple view/viewmodel name configurations.
+		/// </summary>
+		/// <param name="viewModelSetupCallbacks"> A collection of callbacks invoked once the view for a view model has been resolved. </param>
+		/// <remarks>
+		/// <para> The default values are: </para>
+		/// <para> <see cref="ViewModelNamespaceSuffix"/>: ViewModels </para>
+		/// <para> <see cref="ViewNamespaceSuffix"/>: Views </para>
+		/// <para> <see cref="ViewModelNameSuffix"/>: Model </para>
+		/// <para> <see cref="ViewNameSuffix"/>: [EMPTY] </para>
+		/// </remarks>
+		public DefaultViewProvider(ICollection<ViewModelSetupCallback> viewModelSetupCallbacks)
+			: this
+			(
+				viewModelNamespaceSuffix: "ViewModels",
+				viewNamespaceSuffix: "Views",
+				viewModelNameSuffix: "Model",
+				viewNameSuffix: "",
+				viewModelSetupCallbacks.Select(callback => (Action<object, FrameworkElement>)callback).ToArray()
+			)
+		{ }
+
+		/// <summary>
 		/// Constructor
 		/// </summary>
 		/// <param name="viewModelNamespaceSuffix"> The namespace of the view models. </param>
 		/// <param name="viewNamespaceSuffix"> The namespace of the views. </param>
 		/// <param name="viewModelNameSuffix"> The suffix of the view models. </param>
 		/// <param name="viewNameSuffix"> The suffix of the views. </param>
-		/// <param name="viewModelSetupCallbacks"> A collection of <see cref="SetupViewModelDelegate"/>s. </param>
+		/// <param name="viewModelSetupCallbacks"> A collection of callbacks invoked once the view for a view model has been resolved. </param>
 		public DefaultViewProvider
 		(
 			string viewModelNamespaceSuffix,
 			string viewNamespaceSuffix,
 			string viewModelNameSuffix,
 			string viewNameSuffix,
-			params SetupViewModelDelegate[] viewModelSetupCallbacks
+			ICollection<ViewModelSetupCallback> viewModelSetupCallbacks
+		)
+			: this
+			(
+				viewModelNamespaceSuffix,
+				viewNamespaceSuffix,
+				viewModelNameSuffix,
+				viewNameSuffix,
+				viewModelSetupCallbacks.Select(callback => (Action<object, FrameworkElement>)callback).ToArray()
+			)
+		{ }
+
+		/// <summary>
+		/// Constructor
+		/// </summary>
+		/// <param name="viewModelNamespaceSuffix"> The namespace of the view models. </param>
+		/// <param name="viewNamespaceSuffix"> The namespace of the views. </param>
+		/// <param name="viewModelNameSuffix"> The suffix of the view models. </param>
+		/// <param name="viewNameSuffix"> The suffix of the views. </param>
+		/// <param name="viewModelSetupCallbacks"> A collection of callbacks invoked once the view for a view model has been resolved. </param>
+		public DefaultViewProvider
+		(
+			string viewModelNamespaceSuffix,
+			string viewNamespaceSuffix,
+			string viewModelNameSuffix,
+			string viewNameSuffix,
+			params Action<object, FrameworkElement>[] viewModelSetupCallbacks
 		)
 		{
 			// Save parameters.
-			//_auxiliaryViewProviders = auxiliaryViewProviders ?? new IViewProvider[0];
-			_viewModelSetupCallbacks = viewModelSetupCallbacks ?? new SetupViewModelDelegate[0];
+			_viewModelSetupCallbacks = viewModelSetupCallbacks ?? new Action<object, FrameworkElement>[0];
 			this.ViewNameSuffix = viewNameSuffix;
 			this.ViewNamespaceSuffix = viewNamespaceSuffix;
 			this.ViewModelNameSuffix = viewModelNameSuffix;
 			this.ViewModelNamespaceSuffix = viewModelNamespaceSuffix;
 
 			// Initialize fields.
-			//_cacheLock = new object();
-			//_viewCache = new Dictionary<Type, Type>();
 			_viewModelToViewMappings = new ConcurrentDictionary<Type, Type>();
 		}
 
@@ -190,73 +219,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 				Trace.WriteLine($"{this.GetType().Name.ToUpper()}: {ex.Message}");
 				throw;
 			}
-
-			//lock (_cacheLock)
-			//{
-			//	try
-			//	{
-			//		FrameworkElement view;
-
-			//		// Check if the view has already been resolved and is cached.
-			//		var isCached = _viewCache.TryGetValue(viewModelType, out var viewType);
-			//		if (isCached)
-			//		{
-			//			// YES: Create an instance from it.
-			//			view = this.CreateViewInstance(viewType);
-			//		}
-			//		else
-			//		{
-			//			// NO: Try to get the view from the auxiliary view providers.
-			//			var success = this.TryGetViewInstanceFromAuxiliaryViewProviders(viewModel, viewAssembly, out view);
-			//			if (!success)
-			//			{
-			//				// If this failed, then get the view type from this class.
-			//				viewType = this.GetViewType(viewModelType, viewAssembly);
-
-			//				// Create an instance from it.
-			//				view = this.CreateViewInstance(viewType);
-			//			}
-
-			//			// Add the view to the cache.
-			//			_viewCache.Add(viewModelType, view.GetType());
-			//		}
-
-			//		// Always(!) set the data context.
-			//		view.DataContext = viewModel;
-
-			//		// Further setup the view model.
-			//		this.SetupViewModel(viewModel, view);
-
-			//		// Return it.
-			//		return view;
-			//	}
-			//	catch (Exception ex)
-			//	{
-			//		Trace.WriteLine($"{this.GetType().Name.ToUpper()}: {ex.Message}");
-			//		throw;
-			//	}
-			//}
 		}
-
-		//private bool TryGetViewInstanceFromAuxiliaryViewProviders<TClass>(TClass viewModel, Assembly viewAssembly, out FrameworkElement view) where TClass : class
-		//{
-		//	view = null;
-
-		//	foreach (var viewProvider in _auxiliaryViewProviders)
-		//	{
-		//		try
-		//		{
-		//			view = viewProvider.GetViewInstance(viewModel, viewAssembly);
-		//			if (view != null) return true;
-		//		}
-		//		catch (ViewProviderException)
-		//		{
-		//			/* Swallow all exceptions so that all providers are invoked until one finds the view. */
-		//		}
-		//	}
-
-		//	return false;
-		//}
 
 		private Type GetViewType(Type viewModelType, Assembly viewAssembly)
 		{
@@ -266,10 +229,10 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 			// Get the assemblies that contain a the view for the view model. Theoretically this could be many assemblies, in the end only the first found view will be used.
 			var viewAssemblies = this.GetViewAssemblies(viewModelType, viewAssembly);
 			if (!viewAssemblies.Any()) throw new ViewProviderException($"Could not find assemblies containing the views for the view model '{viewModelType.FullName}'.");
-			
+
 			// Get the view type.
 			var viewTypes = this.GetViewTypes(viewFullName, viewAssemblies);
-			
+
 			// Check if only one view type was found.
 			if (viewTypes.Length == 0) throw new ViewProviderException($"Could not find a view named '{viewFullName}' for the view model '{viewModelType.FullName}' in the assemblies '{String.Join(", ", viewAssemblies.Select(assembly => assembly.GetName().Name))}'.");
 			if (viewTypes.Length > 1) Trace.WriteLine($"{this.GetType().Name.ToUpper()}: More than one view matches the name '{viewFullName}' for the view model '{viewModelType.FullName}': '{String.Join(", ", viewTypes.Select(type => type.FullName))}'. The first one will be used.");
@@ -377,7 +340,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		/// </returns>
 		protected internal virtual Assembly[] GetViewAssemblies(Type viewModelType, Assembly viewAssembly = null)
 		{
-			return new[] { viewAssembly ?? viewModelType.Assembly};
+			return new[] { viewAssembly ?? viewModelType.Assembly };
 		}
 
 		/// <summary>
@@ -462,7 +425,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		/// <param name="view"> The view as <see cref="FrameworkElement"/>. </param>
 		/// <remarks>
 		/// <para> • The <paramref name="view"/>s <see cref="FrameworkElement.DataContext"/> is already set to the <paramref name="viewModel"/> by now. </para>
-		/// <para> • Either override this to implement custom / advanced binding or simply supply custom callbacks with a signature of <see cref="SetupViewModelDelegate"/> that will be invoked from this method. </para>
+		/// <para> • Either override this to implement custom / advanced binding or simply supply custom callbacks with a signature of <see cref="Action{T1, T2}"/> where <c>T1</c> is <see cref="object"/> and <c>T2</c> is <see cref="FrameworkElement"/> that will be invoked from this method. </para>
 		/// </remarks>
 		protected virtual void SetupViewModel<TClass>(TClass viewModel, FrameworkElement view) where TClass : class
 		{

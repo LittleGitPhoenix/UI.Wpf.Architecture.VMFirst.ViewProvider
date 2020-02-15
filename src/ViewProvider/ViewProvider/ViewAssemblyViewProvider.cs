@@ -6,6 +6,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Windows;
 
 namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 {
@@ -32,17 +33,17 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		#endregion
 
 		#region (De)Constructors
-		
+
 		/// <summary>
 		/// Constructor with default values for the multiple view/viewmodel name configurations.
 		/// </summary>
-		/// <param name="viewModelSetupCallbacks"> A collection of <see cref="DefaultViewProvider.SetupViewModelDelegate"/>s. </param>
+		/// <param name="viewModelSetupCallbacks"> A collection of callbacks invoked once the view for a view model has been resolved. </param>
 		/// <remarks>
 		/// <para> The default values are: </para>
 		/// <para> <see cref="DefaultViewProvider.ViewModelNameSuffix"/>: Model </para>
 		/// <para> <see cref="DefaultViewProvider.ViewNameSuffix"/>: [EMPTY] </para>
 		/// </remarks>
-		public ViewAssemblyViewProvider(params SetupViewModelDelegate[] viewModelSetupCallbacks)
+		public ViewAssemblyViewProvider(params Action<object, FrameworkElement>[] viewModelSetupCallbacks)
 			: this
 			(
 				viewModelNameSuffix: "Model",
@@ -56,12 +57,12 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		/// </summary>
 		/// <param name="viewModelNameSuffix"> The suffix of the view models. </param>
 		/// <param name="viewNameSuffix"> The suffix of the views. </param>
-		/// <param name="viewModelSetupCallbacks"> A collection of <see cref="DefaultViewProvider.SetupViewModelDelegate"/>s. </param>
+		/// <param name="viewModelSetupCallbacks"> A collection of callbacks invoked once the view for a view model has been resolved. </param>
 		public ViewAssemblyViewProvider
 		(
 			string viewModelNameSuffix,
 			string viewNameSuffix,
-			params SetupViewModelDelegate[] viewModelSetupCallbacks
+			params Action<object, FrameworkElement>[] viewModelSetupCallbacks
 		)
 			: base(null, null, viewModelNameSuffix, viewNameSuffix, viewModelSetupCallbacks) { }
 
