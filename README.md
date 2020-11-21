@@ -1,11 +1,15 @@
 # Phoenix.UI.Wpf.ViewProvider
 
-| .NET Framework | .NET Standard | .NET Core |
+| .NET Framework | .NET Core | .NET |
 | :-: | :-: | :-: |
-| :heavy_check_mark: 4.5 | :heavy_minus_sign: | :heavy_check_mark: 3.1 |
+| :heavy_check_mark: 4.5 | :heavy_check_mark: 3.1 | :heavy_check_mark: 5.0 |
 
 This project is a view model to view resolver to be used in a **View Model First** approach for **WPF** applications.
+___
 
+# Table of content
+
+[toc]
 ___
 
 # General Information
@@ -99,4 +103,4 @@ ___
 
 # Authors
 
-* **Felix Leistner**: _v1.x_
+* **Felix Leistner**: _v1.x_ - _v2.x_
