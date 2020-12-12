@@ -84,7 +84,7 @@ namespace Architecture.VMFirst.ViewProvider.Test
 
 			var viewName = viewProvider.GetViewName(viewModelType, viewProvider.ViewModelNameSuffix, viewProvider.ViewNameSuffix);
 
-			Assert.That(viewName, Is.EqualTo(typeof(SomeView).Name));
+			Assert.That(viewName, Is.EqualTo(nameof(SomeView)));
 		}
 
 		[Test]

@@ -15,6 +15,12 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 	public interface IViewProvider
 	{
 		/// <summary>
+		/// Raised each time a view for a view model was resolved.
+		/// </summary>
+		/// <remarks> This should be raised after the <see cref="FrameworkElement.DataContext"/> of the view has been set to the view model. </remarks>
+		event EventHandler<ViewLoadedEventArgs> ViewLoaded;
+
+		/// <summary>
 		/// Builds a new view instance for the <paramref name="viewModel"/> and sets its <see cref="FrameworkElement.DataContext"/> to the <paramref name="viewModel"/>.
 		/// </summary>
 		/// <typeparam name="TClass"> The <see cref="Type"/> of the  <paramref name="viewModel"/>. </typeparam>

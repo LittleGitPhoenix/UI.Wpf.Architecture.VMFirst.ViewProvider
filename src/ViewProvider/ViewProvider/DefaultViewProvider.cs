@@ -25,6 +25,16 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 	public class DefaultViewProvider : IViewProvider
 	{
 		#region Delegates / Events
+
+		/// <inheritdoc />
+		public event EventHandler<ViewLoadedEventArgs> ViewLoaded;
+
+		/// <summary> Raises <see cref="ViewLoaded"/> </summary>
+		protected void OnViewLoaded<TClass>(TClass viewModel, FrameworkElement view) where TClass : class
+		{
+			this.ViewLoaded?.Invoke(this, new ViewLoadedEventArgs(viewModel, view));
+		}
+
 		#endregion
 
 		#region Constants
@@ -36,6 +46,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		private readonly ConcurrentDictionary<Type, Type> _viewModelToViewMappings;
 
 		/// <summary> A collection of callbacks invoked once the view for a view model has been resolved. </summary>
+		[Obsolete("Instead of view model setup callbacks, use the event based mechanism via 'IViewProvider.ViewLoaded'.")]
 		private readonly ICollection<Action<object, FrameworkElement>> _viewModelSetupCallbacks;
 
 		#endregion
@@ -57,7 +68,18 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		#endregion
 
 		#region (De)Constructors
-		
+
+		/// <summary>
+		/// Constructor
+		/// </summary>
+		public DefaultViewProvider()
+#pragma warning disable 618
+			: this
+			(
+				new Action<object, FrameworkElement>[0]
+			) { }
+#pragma warning restore 618
+
 		/// <summary>
 		/// Constructor
 		/// </summary>
@@ -71,8 +93,9 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 			string viewNamespaceSuffix,
 			string viewModelNameSuffix,
 			string viewNameSuffix
+#pragma warning disable 618
 		) : this
-			(
+		(
 				viewModelNamespaceSuffix,
 				viewNamespaceSuffix,
 				viewModelNameSuffix,
@@ -80,6 +103,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 				new Action<object, FrameworkElement>[0]
 			)
 		{ }
+#pragma warning restore 618
 
 		/// <summary>
 		/// Constructor with default values for the multiple view/viewmodel name configurations.
@@ -92,6 +116,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		/// <para> <see cref="ViewModelNameSuffix"/>: Model </para>
 		/// <para> <see cref="ViewNameSuffix"/>: [EMPTY] </para>
 		/// </remarks>
+		[Obsolete("Instead of view model setup callbacks, use the event based mechanism via 'IViewProvider.ViewLoaded'.")]
 		public DefaultViewProvider(params Action<object, FrameworkElement>[] viewModelSetupCallbacks)
 			: this
 			(
@@ -114,6 +139,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		/// <para> <see cref="ViewModelNameSuffix"/>: Model </para>
 		/// <para> <see cref="ViewNameSuffix"/>: [EMPTY] </para>
 		/// </remarks>
+		[Obsolete("Instead of view model setup callbacks, use the event based mechanism via 'IViewProvider.ViewLoaded'.")]
 		public DefaultViewProvider(ICollection<ViewModelSetupCallback> viewModelSetupCallbacks)
 			: this
 			(
@@ -133,6 +159,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		/// <param name="viewModelNameSuffix"> The suffix of the view models. </param>
 		/// <param name="viewNameSuffix"> The suffix of the views. </param>
 		/// <param name="viewModelSetupCallbacks"> A collection of callbacks invoked once the view for a view model has been resolved. </param>
+		[Obsolete("Instead of view model setup callbacks, use the event based mechanism via 'IViewProvider.ViewLoaded'.")]
 		public DefaultViewProvider
 		(
 			string viewModelNamespaceSuffix,
@@ -159,6 +186,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		/// <param name="viewModelNameSuffix"> The suffix of the view models. </param>
 		/// <param name="viewNameSuffix"> The suffix of the views. </param>
 		/// <param name="viewModelSetupCallbacks"> A collection of callbacks invoked once the view for a view model has been resolved. </param>
+		[Obsolete("Instead of view model setup callbacks, use the event based mechanism via 'IViewProvider.ViewLoaded'.")]
 		public DefaultViewProvider
 		(
 			string viewModelNamespaceSuffix,
@@ -184,7 +212,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		#region Methods
 
 		#region IViewProvider
-
+		
 		/// <inheritdoc />
 		public virtual FrameworkElement GetViewInstance<TClass>(TClass viewModel) where TClass : class
 			=> this.GetViewInstance(viewModel, null);
@@ -209,6 +237,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 				view.DataContext = viewModel;
 
 				// Further setup the view model.
+				this.OnViewLoaded(viewModel, view);
 				this.SetupViewModel(viewModel, view);
 
 				// Return it.
@@ -427,6 +456,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 		/// <para> • The <paramref name="view"/>s <see cref="FrameworkElement.DataContext"/> is already set to the <paramref name="viewModel"/> by now. </para>
 		/// <para> • Either override this to implement custom / advanced binding or simply supply custom callbacks with a signature of <see cref="Action{T1, T2}"/> where <c>T1</c> is <see cref="object"/> and <c>T2</c> is <see cref="FrameworkElement"/> that will be invoked from this method. </para>
 		/// </remarks>
+		[Obsolete("Instead of view model setup callbacks, use the event based mechanism via 'IViewProvider.ViewLoaded'.")]
 		protected virtual void SetupViewModel<TClass>(TClass viewModel, FrameworkElement view) where TClass : class
 		{
 			foreach (var callbacks in _viewModelSetupCallbacks)
@@ -434,23 +464,6 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 				callbacks.Invoke(viewModel, view);
 			}
 		}
-
-		///// <inheritdoc />
-		//[EditorBrowsable(EditorBrowsableState.Never)]
-		//public virtual void BindView<TClass>(FrameworkElement view, TClass viewModel) where TClass : class
-		//{
-		//	// Check if the view model provides a custom 'BindView' method.
-		//	var customBindingMethodInfo = viewModel.GetType().GetMethod(name: nameof(this.BindView), types: new[] {typeof(FrameworkElement)});
-		//	if (customBindingMethodInfo is null)
-		//	{
-		//		Debug.WriteLine($"{this.GetType().Name.ToUpper()}: No custom '{nameof(this.BindView)}' method found in view model '{viewModel}'.");
-		//	}
-		//	else
-		//	{
-		//		Trace.WriteLine($"{this.GetType().Name.ToUpper()}: View model '{viewModel}' has proper '{nameof(this.BindView)}' method, that will now be executed.");
-		//		customBindingMethodInfo.Invoke(viewModel, new object[] {view});
-		//	}
-		//}
 
 		#endregion
 

@@ -41,6 +41,8 @@ This is an `IViewProvider` that creates views for a given view model instance if
 
 ### Setup Callbacks
 
+:heavy_exclamation_mark: This has been deprecated with version **2.1.0**. Use the event based mechanism descripted [here](#Setup-events) instead.
+
 An important aspect of the `DefaultViewProvider` is its ability to invoke _setup callbacks_ once the view for a view model was successfully resolved. Those callbacks must be passed to the constructor of the provider.
 
 Each callback must have the following signature, where **Object** is the view model instance, and **FrameworkElement** is the resolved view.
@@ -75,9 +77,13 @@ builder
 	;
 ```
 
-
-
 The separate **Nuget** package ***Phoenix.UI.Wpf.Architecture.VMFirst*** provides some **ViewModel Interfaces** that can automatically be hooked up this way. More information can be found in the documentation of that project.
+
+### Setup events
+
+The `DefaultViewProvider` provides the `ViewLoaded` that is raised every time a view for a view model was successfully resolved. The assigned `ViewLoadedEventArgs` contains the loaded view and its bound view model.
+
+An event handler attached to this event event can be used for further customization before the view is shown. The separate **Nuget** package [**Phoenix.UI.Wpf.Architecture.VMFirst**](<https://github.com/LittleGitPhoenix/UI.Wpf.Architecture.VMFirst>) provides some **ViewModel Interfaces** that can automatically be hooked up this way. More information can be found in the documentation of that project.
 
 ## ViewAssemblyViewProvider
 

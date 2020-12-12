@@ -12,6 +12,7 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 	/// Helper class for wrapping and converting view model setup callbacks.
 	/// </summary>
 	/// <remarks> The main purpose of this class is to wrap callback actions so they can registered with a IOC.  </remarks>
+	[Obsolete("Instead of view model setup callbacks, use the event based mechanism via 'IViewProvider.ViewLoaded'.")]
 	public class ViewModelSetupCallback
 	{
 		private readonly Action<object, FrameworkElement> _setupCallback;

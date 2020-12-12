@@ -64,7 +64,9 @@ namespace Phoenix.UI.Wpf.Architecture.VMFirst.ViewProvider
 			string viewNameSuffix,
 			params Action<object, FrameworkElement>[] viewModelSetupCallbacks
 		)
+#pragma warning disable 618
 			: base(null, null, viewModelNameSuffix, viewNameSuffix, viewModelSetupCallbacks) { }
+#pragma warning restore 618
 
 		#endregion
 
